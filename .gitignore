@@ -6,4 +6,4 @@ npm-debug.log*
 crm/leads.local.csv
 crm/leads.local.json
 
-.hallmark
+/.hallmark
