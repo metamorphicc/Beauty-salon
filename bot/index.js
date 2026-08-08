@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
 import { salon, services, timeSlots, findService } from "./catalog.js";
 import { optionalEnv } from "./env.js";
 import {
@@ -15,6 +16,7 @@ import {
 import { saveLead } from "./leads.js";
 import { formatDateTime } from "./leadFormat.js";
 import { getLeadStats, listLeads, updateLeadStatus } from "./leadArchive.js";
+import { consultServices } from "./consultant.js";
 
 const adminChatId = optionalEnv("ADMIN_CHAT_ID");
 const sessions = new Map();
@@ -24,6 +26,7 @@ let offset = 0;
 const defaultCommands = [
   { command: "start", description: "Открыть меню" },
   { command: "book", description: "Записаться" },
+  { command: "ask", description: "Подобрать услугу" },
   { command: "prices", description: "Прайс" },
   { command: "address", description: "Адрес и график" },
 ];
@@ -39,8 +42,9 @@ function isAdmin(chatId) {
 
 function menuKeyboard(chatId) {
   const rows = [
-    ["Запись", "Прайс"],
-    ["Адрес", "Связаться"],
+    ["Запись", "Подобрать услугу"],
+    ["Прайс", "Адрес"],
+    ["Связаться"],
   ];
 
   if (isAdmin(chatId)) {
@@ -106,6 +110,14 @@ function backButton(data = "back:menu") {
 
 function singleBackKeyboard(data) {
   return keyboard([[backButton(data)]]);
+}
+
+function consultantKeyboard(servicesToBook) {
+  const serviceRows = servicesToBook.map((service) => [
+    callbackButton(`Записаться: ${service.title}`, `consultBook:${service.id}`),
+  ]);
+
+  return keyboard([...serviceRows, [backButton("back:menu")]]);
 }
 
 function serviceKeyboard() {
@@ -201,6 +213,19 @@ async function showBookingServices(chatId) {
   await sendCleanMessage(chatId, "Выберите услугу.", serviceKeyboard());
 }
 
+async function showConsultantPrompt(chatId) {
+  sessions.set(chatId, { step: "consult" });
+  await sendCleanMessage(
+    chatId,
+    [
+      "Опишите, что хотите решить.",
+      "",
+      "Например: «сухие волосы», «нужны аккуратные ногти к встрече», «хочу освежить лицо перед событием».",
+    ].join("\n"),
+    singleBackKeyboard("back:menu"),
+  );
+}
+
 async function showPrices(chatId) {
   const priceText = services
     .map((service) => `${service.title}: ${service.price}, ${service.duration}`)
@@ -274,6 +299,11 @@ async function handleCommand(chatId, text) {
     return;
   }
 
+  if (text === "/ask") {
+    await showConsultantPrompt(chatId);
+    return;
+  }
+
   if (text === "/prices") {
     await showPrices(chatId);
     return;
@@ -305,6 +335,11 @@ async function handleText(chatId, text, from, messageId) {
     return;
   }
 
+  if (text === "Подобрать услугу") {
+    await showConsultantPrompt(chatId);
+    return;
+  }
+
   if (text === "Прайс") {
     await showPrices(chatId);
     return;
@@ -328,6 +363,16 @@ async function handleText(chatId, text, from, messageId) {
   const session = sessions.get(chatId);
   if (!session) {
     await showMainMenu(chatId);
+    return;
+  }
+
+  if (session.step === "consult") {
+    const result = await consultServices(text);
+    await sendCleanMessage(
+      chatId,
+      escapeHtml(result.answer),
+      consultantKeyboard(result.services),
+    );
     return;
   }
 
@@ -526,6 +571,24 @@ async function handleCallback(callback) {
     return;
   }
 
+  if (data.startsWith("consultBook:")) {
+    const serviceId = data.slice("consultBook:".length);
+    const service = findService(serviceId);
+    if (!service) {
+      await showBookingServices(chatId);
+      return;
+    }
+
+    session.serviceId = service.id;
+    session.step = "master";
+    await sendCleanMessage(
+      chatId,
+      `${service.title}\n${service.price}, ${service.duration}\n\nВыберите мастера.`,
+      masterKeyboard(service),
+    );
+    return;
+  }
+
   if (data.startsWith("service:")) {
     const serviceId = data.split(":")[1];
     const service = findService(serviceId);
@@ -572,7 +635,7 @@ async function handleCallback(callback) {
   await showBookingServices(chatId);
 }
 
-async function handleUpdate(update) {
+export async function handleUpdate(update) {
   if (update.message?.chat?.id && update.message.text) {
     await handleText(
       update.message.chat.id,
@@ -588,7 +651,7 @@ async function handleUpdate(update) {
   }
 }
 
-async function setupCommandMenus() {
+export async function setupCommandMenus() {
   await setMyCommands(defaultCommands, { type: "default" });
 
   if (adminChatId) {
@@ -596,7 +659,7 @@ async function setupCommandMenus() {
   }
 }
 
-async function poll() {
+export async function poll() {
   for (;;) {
     try {
       const updates = await getUpdates(offset);
@@ -611,10 +674,20 @@ async function poll() {
   }
 }
 
-console.log(`Starting ${salon.name} Telegram bot...`);
-try {
-  await setupCommandMenus();
-} catch (error) {
-  console.error(`Telegram command menu setup failed: ${error.message}`);
+async function startPollingBot() {
+  console.log(`Starting ${salon.name} Telegram bot...`);
+  try {
+    await setupCommandMenus();
+  } catch (error) {
+    console.error(`Telegram command menu setup failed: ${error.message}`);
+  }
+  await poll();
 }
-await poll();
+
+function isDirectRun() {
+  return process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+}
+
+if (isDirectRun()) {
+  await startPollingBot();
+}

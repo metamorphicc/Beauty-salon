@@ -2,7 +2,7 @@ import { mkdir, appendFile, access } from "node:fs/promises";
 import { dirname } from "node:path";
 import { formatLeadRow, leadHeaders } from "./leadFormat.js";
 
-const csvPath = "crm/leads.local.csv";
+const csvPath = process.env.VERCEL ? "/tmp/leads.local.csv" : "crm/leads.local.csv";
 const header = leadHeaders.join(",");
 
 function escapeCsv(value) {

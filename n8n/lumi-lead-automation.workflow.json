@@ -1,0 +1,401 @@
+{
+  "name": "Lumi Studio - Lead Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Production-style lead pipeline:\nLanding form -> duplicate check -> Google Sheets CRM -> Telegram admin alert -> client/admin reminder.\n\nSet env vars in n8n:\nGOOGLE_SHEETS_SPREADSHEET_ID\nGOOGLE_SHEETS_SHEET_NAME\nTELEGRAM_BOT_TOKEN\nADMIN_CHAT_ID\nN8N_WEBHOOK_SECRET",
+        "height": 280,
+        "width": 360
+      },
+      "id": "8f94eab7-9e26-4e13-b1f5-3ecaa77f49c2",
+      "name": "Case Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lumi-booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "34fe5ba8-0c46-48a9-8d2b-76afcf3d8bdb",
+      "name": "Webhook - Landing Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        120
+      ],
+      "webhookId": "lumi-booking"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst headers = $json.headers ?? {};\nconst expectedSecret = $env.N8N_WEBHOOK_SECRET;\nconst receivedSecret = headers['x-lumi-webhook-secret'] || headers['X-Lumi-Webhook-Secret'];\n\nif (expectedSecret && receivedSecret !== expectedSecret) {\n  throw new Error('Unauthorized webhook request');\n}\n\nfunction cleanText(value) {\n  return String(value ?? '').trim();\n}\n\nfunction cleanName(value) {\n  return cleanText(value)\n    .replace(/[^\\p{L}' -]/gu, '')\n    .replace(/\\s{2,}/g, ' ')\n    .replace(/-{2,}/g, '-')\n    .slice(0, 40);\n}\n\nfunction cleanPhone(value) {\n  const text = cleanText(value);\n  const hasPlus = text.startsWith('+');\n  const digits = text.replace(/\\D/g, '').slice(0, 15);\n  return `${hasPlus ? '+' : ''}${digits}`;\n}\n\nconst clientName = cleanName(body.clientName || body.name);\nconst phone = cleanPhone(body.phone);\nconst serviceTitle = cleanText(body.serviceTitle || body.service);\nconst visitDate = cleanText(body.visitDate || body.date);\nconst visitTime = cleanText(body.visitTime || body.time || 'уточнить');\nconst leadId = body.id || `LUMI-${Date.now().toString(36).toUpperCase()}`;\n\nif (!/^[\\p{L}][\\p{L}' -]{1,39}$/u.test(clientName)) {\n  throw new Error('Invalid client name');\n}\n\nif (!/^\\+?[0-9]{10,15}$/.test(phone)) {\n  throw new Error('Invalid phone');\n}\n\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(visitDate)) {\n  throw new Error('Invalid visit date');\n}\n\nconst reminderAt = new Date(`${visitDate}T10:00:00+07:00`);\nreminderAt.setDate(reminderAt.getDate() - 1);\n\nreturn [{\n  json: {\n    leadId,\n    createdAt: cleanText(body.createdAt) || new Date().toLocaleString('ru-RU', { timeZone: 'Asia/Novosibirsk' }),\n    clientName,\n    phone,\n    serviceTitle,\n    price: cleanText(body.price || 'уточнить'),\n    master: cleanText(body.master || 'любой свободный мастер'),\n    visitDate,\n    visitTime,\n    status: cleanText(body.status || 'new'),\n    source: cleanText(body.source || 'landing_form'),\n    telegramChatId: cleanText(body.telegramChatId),\n    reminderAt: reminderAt.toISOString()\n  }\n}];"
+      },
+      "id": "71a11d2b-9a1d-43c6-8a38-805af5192f04",
+      "name": "Normalize + Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{$env.GOOGLE_SHEETS_SPREADSHEET_ID}}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{$env.GOOGLE_SHEETS_SHEET_NAME || 'Leads'}}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "ed7b6512-c156-41c4-84f3-a58526a98ce0",
+      "name": "Read CRM Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -160,
+        120
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "replace-with-your-credential-id",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $items('Normalize + Validate')[0].json;\nconst rows = $input.all().map((item) => item.json);\n\nfunction normalizePhone(value) {\n  return String(value ?? '').replace(/\\D/g, '');\n}\n\nconst phone = normalizePhone(lead.phone);\nconst duplicate = rows.some((row) => {\n  const rowPhone = normalizePhone(row['Телефон'] || row.phone || row.Phone);\n  const rowDate = String(row['Дата визита'] || row.visitDate || row.date || '');\n  const rowStatus = String(row['Статус'] || row.status || '').toLowerCase();\n  return rowPhone === phone && rowDate === lead.visitDate && rowStatus !== 'cancelled';\n});\n\nreturn [{\n  json: {\n    ...lead,\n    isDuplicate: duplicate,\n    duplicateReason: duplicate ? 'same phone and visit date already exists' : ''\n  }\n}];"
+      },
+      "id": "99df347c-f461-44fb-b5b7-13a9072cae0e",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.isDuplicate}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "14658d58-a381-418f-bd8b-0ac49d63affb",
+      "name": "Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        400,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TELEGRAM_BOT_TOKEN}}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.ADMIN_CHAT_ID, text: `Дубль заявки Lumi Studio\\n\\nКлиент: ${$json.clientName}\\nТелефон: ${$json.phone}\\nУслуга: ${$json.serviceTitle}\\nДата: ${$json.visitDate}\\n\\nПричина: ${$json.duplicateReason}` }) }}"
+      },
+      "id": "95b8711c-8beb-4564-8c1f-8765d8ae0b74",
+      "name": "Telegram - Duplicate Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, duplicate: true, leadId: $json.leadId, message: 'Duplicate lead' }) }}",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "id": "efa081cd-7454-4963-a81e-1b3ec55d0243",
+      "name": "Respond - Duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        980,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $json;\n\nreturn [{\n  json: {\n    'Дата заявки': lead.createdAt,\n    'Имя клиента': lead.clientName,\n    'Телефон': lead.phone,\n    'Услуга': lead.serviceTitle,\n    'Цена': lead.price,\n    'Мастер': lead.master,\n    'Дата визита': lead.visitDate,\n    'Время визита': lead.visitTime,\n    'Статус': lead.status,\n    'Источник': lead.source,\n    'Telegram chat ID': lead.telegramChatId,\n    leadId: lead.leadId,\n    clientName: lead.clientName,\n    phone: lead.phone,\n    serviceTitle: lead.serviceTitle,\n    visitDate: lead.visitDate,\n    visitTime: lead.visitTime,\n    telegramChatId: lead.telegramChatId\n  }\n}];"
+      },
+      "id": "0e6fb47c-3268-4f2a-9ea4-1e86a2236a48",
+      "name": "Prepare CRM Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{$env.GOOGLE_SHEETS_SPREADSHEET_ID}}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{$env.GOOGLE_SHEETS_SHEET_NAME || 'Leads'}}",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "d9004a74-c9d1-40cd-976e-f995f6d80ac8",
+      "name": "Google Sheets - Append Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        980,
+        220
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "replace-with-your-credential-id",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TELEGRAM_BOT_TOKEN}}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.ADMIN_CHAT_ID, text: `Новая заявка с сайта Lumi Studio\\n\\nID: ${$items('Prepare CRM Row')[0].json.leadId}\\nКлиент: ${$items('Prepare CRM Row')[0].json.clientName}\\nТелефон: ${$items('Prepare CRM Row')[0].json.phone}\\nУслуга: ${$items('Prepare CRM Row')[0].json.serviceTitle}\\nДата: ${$items('Prepare CRM Row')[0].json.visitDate}\\nВремя: ${$items('Prepare CRM Row')[0].json.visitTime}\\n\\nCRM: n8n + Google Sheets` }) }}"
+      },
+      "id": "e7fbca75-f83d-4993-b8f2-0eaf759b1e9e",
+      "name": "Telegram - Admin Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, duplicate: false, leadId: $items('Prepare CRM Row')[0].json.leadId, crm: 'google_sheets', pipeline: 'n8n' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "d294bec6-3c34-43e8-a2de-69470e6c4203",
+      "name": "Respond - Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 1,
+        "unit": "days"
+      },
+      "id": "459178a5-f21d-44d6-9a38-93b4b706bc81",
+      "name": "Wait - Reminder Window",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        980,
+        360
+      ],
+      "webhookId": "lumi-reminder-window"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TELEGRAM_BOT_TOKEN}}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $json.telegramChatId || $env.ADMIN_CHAT_ID, text: `Напоминание Lumi Studio\\n\\n${$json.clientName}, запись на ${$json.serviceTitle}: ${$json.visitDate} ${$json.visitTime}.\\nТелефон: ${$json.phone}` }) }}"
+      },
+      "id": "a7528824-4b94-40ad-9744-ad7ee86ae776",
+      "name": "Telegram - Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        360
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Landing Lead": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Validate": {
+      "main": [
+        [
+          {
+            "node": "Read CRM Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CRM Rows": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Duplicate Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare CRM Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Duplicate Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond - Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CRM Row": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait - Reminder Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Append Lead": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Admin Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Admin Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond - Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Reminder Window": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-08-09T00:00:00.000Z",
+  "versionId": "local-template"
+}

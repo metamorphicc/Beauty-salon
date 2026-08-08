@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
-const archivePath = "crm/leads.local.json";
+const archivePath = process.env.VERCEL ? "/tmp/leads.local.json" : "crm/leads.local.json";
 
 function createLeadId() {
   return `LUMI-${Date.now().toString(36).toUpperCase()}`;
@@ -34,7 +34,11 @@ export async function archiveLead(lead, saveResult) {
   };
 
   leads.unshift(archivedLead);
-  await writeArchive(leads.slice(0, 200));
+  try {
+    await writeArchive(leads.slice(0, 200));
+  } catch (error) {
+    console.error(`Lead archive write failed: ${error.message}`);
+  }
   lead.id = leadId;
   return archivedLead;
 }

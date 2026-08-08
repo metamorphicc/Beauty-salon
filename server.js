@@ -8,6 +8,7 @@ import { optionalEnv } from "./bot/env.js";
 import { callbackButton, keyboard, sendMessage } from "./bot/telegram.js";
 import { services } from "./bot/catalog.js";
 import { formatDateTime } from "./bot/leadFormat.js";
+import { sendLeadToN8n } from "./bot/n8n.js";
 
 const root = resolve(".");
 const port = Number(process.env.PORT || 3000);
@@ -256,7 +257,25 @@ async function handleBooking(request, response) {
     assertRateLimit(request);
     const body = await readJsonBody(request);
     const lead = normalizeLead(body);
-    const crmResult = await saveLead(lead);
+    let crmResult;
+    try {
+      crmResult = await sendLeadToN8n(lead);
+    } catch (error) {
+      console.error(`n8n pipeline failed, falling back to local automation: ${error.message}`);
+    }
+
+    if (crmResult) {
+      json(response, 200, {
+        ok: true,
+        crm: crmResult.type,
+        adminNotified: true,
+        adminError: "",
+        message: "Мы передали заявку в n8n-сценарий. Администратор получил уведомление.",
+      });
+      return;
+    }
+
+    crmResult = await saveLead(lead);
 
     let adminNotified = false;
     let adminError = "";

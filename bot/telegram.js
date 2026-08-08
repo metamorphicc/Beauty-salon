@@ -68,6 +68,20 @@ export async function setMyCommands(commands, scope) {
   return telegram("setMyCommands", scope ? { commands, scope } : { commands });
 }
 
+export async function setWebhook(url, secretToken) {
+  return telegram("setWebhook", {
+    url,
+    allowed_updates: ["message", "callback_query"],
+    ...(secretToken ? { secret_token: secretToken } : {}),
+  });
+}
+
+export async function deleteWebhook(dropPendingUpdates = false) {
+  return telegram("deleteWebhook", {
+    drop_pending_updates: dropPendingUpdates,
+  });
+}
+
 export async function getUpdates(offset) {
   return telegram("getUpdates", {
     offset,
