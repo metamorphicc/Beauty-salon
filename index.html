@@ -201,11 +201,30 @@
         <form class="booking-form" id="bookingForm">
           <label>
             <span>Имя</span>
-            <input name="name" type="text" placeholder="Анна" autocomplete="name" required />
+            <input
+              name="name"
+              type="text"
+              placeholder="Анна"
+              autocomplete="name"
+              minlength="2"
+              maxlength="40"
+              pattern="^[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё' -]{1,39}$"
+              required
+            />
           </label>
           <label>
             <span>Телефон</span>
-            <input name="phone" type="tel" placeholder="+7 999 000 00 00" autocomplete="tel" required />
+            <input
+              name="phone"
+              type="tel"
+              placeholder="+79990000000"
+              autocomplete="tel"
+              inputmode="tel"
+              minlength="10"
+              maxlength="16"
+              pattern="^\+?[0-9]{10,15}$"
+              required
+            />
           </label>
           <label>
             <span>Услуга</span>
@@ -227,6 +246,29 @@
         </form>
       </section>
     </main>
+
+    <aside class="success-popout" id="successPopout" aria-hidden="true" role="status">
+      <section class="success-popout__panel" aria-labelledby="successTitle">
+        <button class="success-popout__x" type="button" data-popout-close aria-label="Закрыть">
+          ×
+        </button>
+        <div class="success-mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="success-copy">
+          <p class="eyebrow">Booking confirmed</p>
+          <p id="successTitle">Запись отправлена</p>
+          <p>
+            <strong id="successName">Клиент</strong> ·
+            <span id="successService">услуга</span> ·
+            <span id="successDate">дата</span>
+          </p>
+          <p id="successNote">Заявка сохранена в CRM и отправлена администратору.</p>
+        </div>
+      </section>
+    </aside>
 
     <footer class="site-footer section-ink" id="contacts">
       <div>

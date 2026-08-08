@@ -1,0 +1,7 @@
+.env
+node_modules/
+npm-debug.log*
+
+# Runtime CRM fallback data.
+crm/leads.local.csv
+crm/leads.local.json
