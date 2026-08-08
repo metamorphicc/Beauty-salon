@@ -4,41 +4,41 @@
   --font-body: "Segoe UI", Inter, Arial, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
 
-  --color-ink: #191619;
-  --color-ink-soft: #3e383d;
-  --color-porcelain: #f7f1e8;
-  --color-porcelain-deep: #ece1d4;
-  --color-sage: #bfc8b4;
-  --color-sage-deep: #7c8b70;
-  --color-blush: #ead0c8;
-  --color-plum: #5d243d;
-  --color-clay: #a75337;
-  --color-white: #fffaf2;
-  --color-line: rgba(25, 22, 25, 0.16);
-  --color-line-strong: rgba(25, 22, 25, 0.18);
-  --color-input-line: rgba(25, 22, 25, 0.28);
-  --color-dark-line: rgba(255, 250, 242, 0.18);
-  --color-white-muted: rgba(255, 250, 242, 0.82);
-  --color-white-soft: rgba(255, 250, 242, 0.72);
-  --color-white-dim: rgba(255, 250, 242, 0.68);
-  --color-white-faint: rgba(255, 250, 242, 0.66);
-  --color-ink-muted: rgba(25, 22, 25, 0.68);
-  --surface-header-top: rgba(25, 22, 25, 0.74);
-  --surface-header-bottom: rgba(25, 22, 25, 0);
-  --surface-hero-left: rgba(25, 22, 25, 0.93);
-  --surface-hero-mid: rgba(25, 22, 25, 0.62);
-  --surface-hero-right: rgba(25, 22, 25, 0.36);
-  --surface-hero-bottom: rgba(25, 22, 25, 0.72);
-  --surface-hero-top: rgba(25, 22, 25, 0.08);
-  --surface-glass: rgba(25, 22, 25, 0.34);
-  --surface-white-wash: rgba(255, 250, 242, 0.42);
-  --surface-white-quiet: rgba(255, 250, 242, 0.28);
-  --surface-white-ghost: rgba(255, 250, 242, 0.06);
+  --color-ink: #171315;
+  --color-ink-soft: #403438;
+  --color-porcelain: #f4ede6;
+  --color-porcelain-deep: #e4d4ca;
+  --color-sage: #cbb9ae;
+  --color-sage-deep: #846e65;
+  --color-blush: #e7c8bd;
+  --color-plum: #61213b;
+  --color-clay: #934f3f;
+  --color-white: #fff8f1;
+  --color-line: rgba(23, 19, 21, 0.15);
+  --color-line-strong: rgba(23, 19, 21, 0.18);
+  --color-input-line: rgba(23, 19, 21, 0.3);
+  --color-dark-line: rgba(255, 248, 241, 0.18);
+  --color-white-muted: rgba(255, 248, 241, 0.82);
+  --color-white-soft: rgba(255, 248, 241, 0.72);
+  --color-white-dim: rgba(255, 248, 241, 0.68);
+  --color-white-faint: rgba(255, 248, 241, 0.66);
+  --color-ink-muted: rgba(23, 19, 21, 0.68);
+  --surface-header-top: rgba(23, 19, 21, 0.74);
+  --surface-header-bottom: rgba(23, 19, 21, 0);
+  --surface-hero-left: rgba(23, 19, 21, 0.93);
+  --surface-hero-mid: rgba(23, 19, 21, 0.64);
+  --surface-hero-right: rgba(23, 19, 21, 0.38);
+  --surface-hero-bottom: rgba(23, 19, 21, 0.72);
+  --surface-hero-top: rgba(23, 19, 21, 0.08);
+  --surface-glass: rgba(23, 19, 21, 0.34);
+  --surface-white-wash: rgba(255, 248, 241, 0.44);
+  --surface-white-quiet: rgba(255, 248, 241, 0.3);
+  --surface-white-ghost: rgba(255, 248, 241, 0.06);
 
   --space-page: clamp(18px, 7vw, 112px);
   --space-section: clamp(68px, 9vw, 128px);
   --radius-card: 8px;
-  --shadow-soft: 0 26px 70px rgba(25, 22, 25, 0.16);
+  --shadow-soft: 0 26px 70px rgba(23, 19, 21, 0.16);
 }
 
 * {
@@ -419,6 +419,18 @@ select {
   line-height: 0.98;
 }
 
+.flow-copy h2 {
+  max-width: 11ch;
+  font-size: clamp(46px, 5.2vw, 76px);
+  line-height: 1.08;
+}
+
+.booking-copy h2 {
+  max-width: 10ch;
+  font-size: clamp(48px, 5.4vw, 82px);
+  line-height: 1.08;
+}
+
 .service-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -447,7 +459,7 @@ select {
 .service-card:hover,
 .masters-grid article:hover {
   transform: translateY(-5px);
-  border-color: rgba(93, 36, 61, 0.24);
+  border-color: rgba(97, 33, 59, 0.24);
   box-shadow: var(--shadow-soft);
 }
 
@@ -487,6 +499,17 @@ select {
   color: var(--color-ink-muted);
   font-size: 15px;
   line-height: 1.65;
+}
+
+.flow-copy h2 + p {
+  margin-top: 22px;
+  max-width: 600px;
+  color: var(--color-white-soft);
+}
+
+.booking-copy h2 + p {
+  margin-top: 22px;
+  max-width: 680px;
 }
 
 .service-card dl {
@@ -543,11 +566,6 @@ select {
   inset: 52% 8% 28% 64%;
   border-color: var(--color-clay);
   background: var(--color-clay);
-}
-
-.flow-copy p {
-  max-width: 620px;
-  color: var(--color-white-soft);
 }
 
 .flow-steps {
@@ -649,7 +667,7 @@ select {
 
 .booking-form:focus-within {
   transform: translateY(-2px);
-  box-shadow: 0 28px 70px rgba(63, 47, 50, 0.15);
+  box-shadow: 0 28px 70px rgba(54, 40, 43, 0.15);
 }
 
 .booking-form label {
@@ -682,7 +700,7 @@ select {
 input:focus,
 select:focus {
   border-color: var(--color-plum);
-  background: rgba(255, 250, 242, 0.58);
+  background: rgba(255, 248, 241, 0.58);
 }
 
 .form-status {
@@ -714,7 +732,7 @@ select:focus {
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(25, 22, 25, 0.46);
+  background: rgba(23, 19, 21, 0.46);
   backdrop-filter: blur(10px);
   cursor: pointer;
 }
@@ -723,11 +741,11 @@ select:focus {
   position: relative;
   width: min(100%, 520px);
   padding: clamp(28px, 5vw, 48px);
-  border: 1px solid rgba(93, 36, 61, 0.14);
+  border: 1px solid rgba(97, 33, 59, 0.14);
   border-radius: var(--radius-card);
   color: var(--color-ink);
   background: var(--color-white);
-  box-shadow: 0 36px 110px rgba(25, 22, 25, 0.28);
+  box-shadow: 0 36px 110px rgba(23, 19, 21, 0.28);
   transform: translateY(24px) scale(0.94);
   opacity: 0;
   overflow: hidden;
@@ -780,7 +798,7 @@ select:focus {
   width: 72px;
   height: 72px;
   margin-bottom: 26px;
-  border: 1px solid rgba(93, 36, 61, 0.16);
+  border: 1px solid rgba(97, 33, 59, 0.16);
   border-radius: 50%;
   background: var(--color-blush);
 }
@@ -867,8 +885,8 @@ select:focus {
   gap: 14px;
   width: 100%;
   padding: 18px 42px 18px 18px;
-  border-color: rgba(93, 36, 61, 0.18);
-  box-shadow: 0 18px 55px rgba(25, 22, 25, 0.2);
+  border-color: rgba(97, 33, 59, 0.18);
+  box-shadow: 0 18px 55px rgba(23, 19, 21, 0.2);
   transform: translateX(calc(-100% - 40px));
   opacity: 0;
   pointer-events: auto;
@@ -896,7 +914,7 @@ select:focus {
   right: 0;
   bottom: 0;
   height: 3px;
-  background: rgba(93, 36, 61, 0.2);
+  background: rgba(97, 33, 59, 0.2);
   transform-origin: left;
 }
 
@@ -921,7 +939,7 @@ select:focus {
 
 .success-popout__x:hover {
   color: var(--color-plum);
-  background: rgba(93, 36, 61, 0.08);
+  background: rgba(97, 33, 59, 0.08);
 }
 
 .success-copy {
@@ -1093,6 +1111,12 @@ select:focus {
   .flow-copy h2,
   .booking-copy h2 {
     font-size: clamp(35px, 12vw, 58px);
+  }
+
+  .flow-copy h2,
+  .booking-copy h2 {
+    max-width: 11ch;
+    line-height: 1.08;
   }
 
   .studio-facts div {
