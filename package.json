@@ -9,7 +9,7 @@
     "bot": "node bot/index.js",
     "webhook:set": "node bot/set-webhook.js",
     "webhook:delete": "node bot/delete-webhook.js",
-    "check": "node --check app.js && node --check bot/index.js && node --check server.js && node --check api/telegram.js && node --check api/booking.js && node --check bot/n8n.js && node --check bot/set-webhook.js && node --check bot/delete-webhook.js && node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync('n8n/lumi-lead-automation.workflow.json','utf8')); JSON.parse(fs.readFileSync('vercel.json','utf8'))\"",
+    "check": "node --check assets/app.js && node --check bot/index.js && node --check server.js && node --check api/telegram.js && node --check api/booking.js && node --check bot/n8n.js && node --check bot/set-webhook.js && node --check bot/delete-webhook.js && node -e \"const fs=require('fs'); JSON.parse(fs.readFileSync('n8n/lumi-lead-automation.workflow.json','utf8')); JSON.parse(fs.readFileSync('vercel.json','utf8'))\"",
     "check:env": "node bot/check-env.js",
     "sheets:prepare": "node bot/prepare-sheet.js"
   },

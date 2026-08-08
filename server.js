@@ -23,7 +23,7 @@ const allowedServices = new Set([
   ...services.map((service) => service.title),
   ...landingServiceAliases,
 ]);
-const publicFiles = new Set(["index.html", "styles.css", "app.js"]);
+const publicFiles = new Set(["index.html", "styles.css"]);
 const publicDirs = ["assets"];
 
 const mimeTypes = {

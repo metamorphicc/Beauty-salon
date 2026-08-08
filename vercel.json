@@ -5,6 +5,20 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/booking",
+      "destination": "/api/booking"
+    },
+    {
+      "source": "/api/telegram",
+      "destination": "/api/telegram"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
