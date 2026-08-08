@@ -3,12 +3,12 @@ import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, relative, resolve } from "node:path";
-import { saveLead } from "./bot/leads.js";
-import { optionalEnv } from "./bot/env.js";
-import { callbackButton, keyboard, sendMessage } from "./bot/telegram.js";
-import { services } from "./bot/catalog.js";
-import { formatDateTime } from "./bot/leadFormat.js";
-import { sendLeadToN8n } from "./bot/n8n.js";
+import { saveLead } from "../bot/leads.js";
+import { optionalEnv } from "../bot/env.js";
+import { callbackButton, keyboard, sendMessage } from "../bot/telegram.js";
+import { services } from "../bot/catalog.js";
+import { formatDateTime } from "../bot/leadFormat.js";
+import { sendLeadToN8n } from "../bot/n8n.js";
 
 const root = resolve(".");
 const port = Number(process.env.PORT || 3000);
