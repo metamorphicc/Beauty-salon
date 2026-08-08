@@ -170,30 +170,36 @@ if (form && statusNode) {
         service,
         date,
       };
+      const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
       const apiUrls =
         window.location.protocol === "file:"
           ? ["http://localhost:3000/api/booking"]
-          : ["/api/booking", "http://localhost:3000/api/booking"];
+          : isLocalHost
+            ? ["/api/booking", "http://localhost:3000/api/booking"]
+            : ["/api/booking"];
 
       let result;
       let lastError;
       for (const apiUrl of apiUrls) {
+        let response;
         try {
-          const response = await fetch(apiUrl, {
+          response = await fetch(apiUrl, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(payload),
           });
-
-          result = await response.json();
-          if (!response.ok || !result.ok) {
-            throw new Error(result.message || "Не удалось отправить заявку.");
-          }
-          lastError = null;
-          break;
         } catch (error) {
           lastError = error;
+          continue;
         }
+
+        result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message || "Не удалось отправить заявку.");
+        }
+
+        lastError = null;
+        break;
       }
 
       if (lastError) {
@@ -209,7 +215,9 @@ if (form && statusNode) {
       }
     } catch (error) {
       statusNode.textContent =
-        "Форма не отправилась. Запустите сайт через `node server.js` и попробуйте еще раз.";
+        error.message === "Failed to fetch"
+          ? "Форма не отправилась. Попробуйте еще раз."
+          : error.message || "Форма не отправилась. Попробуйте еще раз.";
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

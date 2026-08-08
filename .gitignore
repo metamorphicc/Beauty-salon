@@ -1,6 +1,7 @@
 .env
 node_modules/
 npm-debug.log*
+.vercel/
 
 # Runtime CRM fallback data.
 crm/leads.local.csv

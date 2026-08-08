@@ -1,9 +1,9 @@
 import { requireEnv } from "./env.js";
 
-const token = requireEnv("TELEGRAM_BOT_TOKEN");
-const apiUrl = `https://api.telegram.org/bot${token}`;
-
 export async function telegram(method, payload) {
+  const token = requireEnv("TELEGRAM_BOT_TOKEN");
+  const apiUrl = `https://api.telegram.org/bot${token}`;
+
   const response = await fetch(`${apiUrl}/${method}`, {
     method: "POST",
     headers: { "content-type": "application/json" },

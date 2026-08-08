@@ -33,6 +33,16 @@ export async function sendLeadToN8n(lead) {
     body = { raw: responseText };
   }
 
+  if (response.status === 409 || body.duplicate) {
+    return {
+      type: "n8n",
+      duplicate: true,
+      leadId: body.leadId || lead.id || "",
+      webhook: true,
+      response: body,
+    };
+  }
+
   if (!response.ok || body.ok === false) {
     throw new Error(`n8n webhook failed: ${response.status} ${responseText}`);
   }

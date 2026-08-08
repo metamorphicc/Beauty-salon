@@ -1,6 +1,6 @@
 import "../bot/env.js";
 import { handleUpdate, setupCommandMenus } from "../bot/index.js";
-import { optionalEnv } from "../bot/env.js";
+import { optionalEnv, requireEnv } from "../bot/env.js";
 
 let commandMenuReady = false;
 
@@ -30,6 +30,8 @@ export default async function handler(request, response) {
   }
 
   try {
+    requireEnv("TELEGRAM_BOT_TOKEN");
+
     if (!commandMenuReady) {
       try {
         await setupCommandMenus();

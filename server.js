@@ -264,6 +264,17 @@ async function handleBooking(request, response) {
       console.error(`n8n pipeline failed, falling back to local automation: ${error.message}`);
     }
 
+    if (crmResult?.duplicate) {
+      json(response, 409, {
+        ok: false,
+        duplicate: true,
+        crm: crmResult.type,
+        leadId: crmResult.leadId,
+        message: "Такая заявка уже есть. Администратор получил уведомление о дубле.",
+      });
+      return;
+    }
+
     if (crmResult) {
       json(response, 200, {
         ok: true,

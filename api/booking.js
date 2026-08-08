@@ -145,6 +145,17 @@ export default async function handler(request, response) {
       console.error(`n8n pipeline failed, falling back to local automation: ${error.message}`);
     }
 
+    if (crmResult?.duplicate) {
+      response.status(409).json({
+        ok: false,
+        duplicate: true,
+        crm: crmResult.type,
+        leadId: crmResult.leadId,
+        message: "Такая заявка уже есть. Администратор получил уведомление о дубле.",
+      });
+      return;
+    }
+
     if (crmResult) {
       response.status(200).json({
         ok: true,
